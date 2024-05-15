@@ -3,6 +3,7 @@ import cv2
 import torch
 import streamlit as st
 from streamlit_option_menu import option_menu
+from streamlit_webrtc import VideoTransformerBase, webrtc_streamer, WebRtcMode, RTCConfiguration
 
 from Models import HGRModel, landmarks_to_list, normalize_landmarks
 
@@ -81,40 +82,26 @@ if selected == 'Hand Gesture Recognition':
         with classes_cols[i]:
             st.write(f"{key}: {value}")
 
-    if 'run' not in st.session_state:
-        st.session_state.run = False
+    class VideoTransformer(VideoTransformerBase):
+        def transform(self, frame):
+            img = frame.to_ndarray(format="bgr24")
 
-    cols = st.columns(2)
-    with cols[0]:
-        st.session_state.run = st.button('Run')
-    with cols[1]:
-        st.session_state.run = not st.button('Stop')
-
-    FRAME_WINDOW = st.empty()
-    cap = cv2.VideoCapture(0)
-
-    if st.session_state.run:
-        with HandLandmarker as landmarker:
-            while st.session_state.run:
-                success, frame = cap.read()
-                if not success:
-                    continue
-
+            with HandLandmarker as landmarker:
                 # Convert the BGR image to RGB.
-                frame = cv2.flip(frame, 1)
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                img = cv2.flip(img, 1)
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
                 # Detect the hand landmarks
-                frame.flags.writeable = False
-                results = landmarker.process(frame)
+                img.flags.writeable = False
+                results = landmarker.process(img)
 
                 # Draw the hand annotations on the image.
-                frame.flags.writeable = True
-                frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                img.flags.writeable = True
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
                 if results.multi_hand_landmarks:
                     for hand_landmarks in results.multi_hand_landmarks:
                         mp_drawings.draw_landmarks(
-                            frame,
+                            img,
                             hand_landmarks,
                             mp_hands.HAND_CONNECTIONS,
                             mp_drawings.DrawingSpec(color=(97, 137, 48), thickness=2, circle_radius=4),
@@ -122,7 +109,7 @@ if selected == 'Hand Gesture Recognition':
                         )
 
                         # Convert the landmarks to a list wrt the image
-                        landmarks = landmarks_to_list(frame, results.multi_hand_landmarks)
+                        landmarks = landmarks_to_list(img, results.multi_hand_landmarks)
 
                         # Normalize the landmarks
                         landmarks = normalize_landmarks(landmarks).reshape(1, -1)
@@ -130,11 +117,22 @@ if selected == 'Hand Gesture Recognition':
                         pred_class = torch.argmax(Y_pred, axis=1).item()
 
                         # Annotate the predicted class on the screen
-                        cv2.putText(frame, classes[pred_class], (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+                        cv2.putText(img, classes[pred_class], (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
 
-                FRAME_WINDOW.image(frame)
+            return img
 
-        cap.release()
+    FRAME_WINDOW = st.empty()
+    RTC_CONFIGURATION = RTCConfiguration(
+    {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
+)
+    webrtc_streamer(
+        key="example",
+        mode=WebRtcMode.SENDRECV,
+        rtc_configuration=RTC_CONFIGURATION,
+        media_stream_constraints={"video": True, "audio": False},
+        video_transformer_factory=VideoTransformer,
+        async_processing=True,
+    )
 
     # code block
     st.title('Notebook')

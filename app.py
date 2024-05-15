@@ -50,7 +50,7 @@ if selected == 'Hand Gesture Recognition':
 
     # page title
     st.title('Hand Gesture Recognition Model')
-    st.write('Due to some internal issues with the library Webcam won't be working. But you can checkout the Github repo.')
+    st.write("Due to some internal issues with the library Webcam won't be working. But you can checkout the Github repo.")
     # dataset link
     # st.markdown(
     #     """

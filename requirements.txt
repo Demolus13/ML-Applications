@@ -3,5 +3,7 @@ streamlit-option-menu
 numpy
 pandas
 scipy
-torch
 scikit-learn
+torch
+torchvision
+opencv-python

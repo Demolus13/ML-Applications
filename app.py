@@ -40,23 +40,23 @@ if selected == 'Hand Gesture Recognition':
     # st.write('This is a Decison Tree model for Breast Cancer')
 
     # dataset link
-    st.markdown(
-        """
-        <a href="https://archive.ics.uci.edu/dataset/17/breast+cancer+wisconsin+diagnostic" target="_blank">
-            <button style='background-color: #262730;
-            border: 0px;
-            border-radius: 10px;
-            color: white;
-            padding: 10px 15px;
-            text-align: center;
-            text-decoration: none;
-            font-size: 16px;
-            margin-bottom: 1rem;
-            cursor: pointer;'>Breast Cancer Dataset</button>
-        </a>
-        """, 
-        unsafe_allow_html=True,
-    )
+    # st.markdown(
+    #     """
+    #     <a href="https://archive.ics.uci.edu/dataset/17/breast+cancer+wisconsin+diagnostic" target="_blank">
+    #         <button style='background-color: #262730;
+    #         border: 0px;
+    #         border-radius: 10px;
+    #         color: white;
+    #         padding: 10px 15px;
+    #         text-align: center;
+    #         text-decoration: none;
+    #         font-size: 16px;
+    #         margin-bottom: 1rem;
+    #         cursor: pointer;'>Breast Cancer Dataset</button>
+    #     </a>
+    #     """, 
+    #     unsafe_allow_html=True,
+    # )
 
     # code block
     st.title('Notebook')

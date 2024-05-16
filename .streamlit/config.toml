@@ -2,7 +2,3 @@
 base="dark"
 primaryColor="#618930"
 backgroundColor="#131517"
-
-[server]
-enableXsrfProtection = false
-enableCORS = false

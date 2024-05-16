@@ -80,7 +80,7 @@ if selected == 'Hand Gesture Recognition':
         3: "Left hand close"
     }
 
-    uploaded_file = st.file_uploader("Upload file", type=['png', 'jpg', 'jpeg'])
+    uploaded_file = st.file_uploader("Upload file", type=['png', 'jpg', 'jpeg'], label_visibility='collapsed')
 
     if st.button('Process the image'):
         if uploaded_file is not None:

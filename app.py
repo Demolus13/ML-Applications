@@ -80,6 +80,12 @@ if selected == 'Hand Gesture Recognition':
         3: "Left hand close"
     }
 
+    class_col = st.columns(4)
+    for i, value in enumerate(list(classes.values())[1:]):
+        image_path = os.path.join('Images', f"{i}.jpg")
+        class_col[i].markdown(f"<div style='text-align: center; margin-bottom: 20px;'>{value}</div>", unsafe_allow_html=True)
+        class_col[i].image(image_path, use_column_width=True)
+
     uploaded_file = st.file_uploader("Upload file", type=['png', 'jpg', 'jpeg'], label_visibility='collapsed')
 
     if st.button('Process the image'):

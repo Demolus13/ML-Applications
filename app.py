@@ -52,7 +52,7 @@ if selected == 'Hand Gesture Recognition':
 
     # page title
     st.title('Hand Gesture Recognition Model')
-    st.write('The Frame are not able to keep up with the processing so only the last frame is displayed')
+    # st.write('The Frame are not able to keep up with the processing so only the last frame is displayed')
     # dataset link
     # st.markdown(
     #     """

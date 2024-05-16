@@ -80,58 +80,53 @@ if selected == 'Hand Gesture Recognition':
         3: "Left hand close"
     }
 
-    uploaded_file = st.file_uploader("Upload file", type=['mp4'])
+    uploaded_file = st.file_uploader("Upload file", type=['png', 'jpg', 'jpeg'])
 
-    if st.button('Process the video'):
+    if st.button('Process the image'):
         if uploaded_file is not None:
             tfile = tempfile.NamedTemporaryFile(delete=False) 
             tfile.write(uploaded_file.read())
             FRAME_WINDOW = st.image([])
-            cap = cv2.VideoCapture(tfile.name)
+
+            # Load the image using OpenCV
+            img = cv2.imread(tfile.name)
 
             # Create a placeholder for the text
             placeholder = st.empty()
             pred_class = -1
 
             with HandLandmarker as landmarker:
-                while True:
-                    success, frame = cap.read()
-                    if not success:
-                        break
+                # Convert the BGR image to RGB.
+                img = cv2.flip(img, 1)
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-                    # Convert the BGR image to RGB.
-                    frame = cv2.flip(frame, 1)
-                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                # Detect the hand landmarks
+                img.flags.writeable = False
+                results = landmarker.process(img)
 
-                    # Detect the hand landmarks
-                    frame.flags.writeable = False
-                    results = landmarker.process(frame)
+                # Draw the hand annotations on the image.
+                img.flags.writeable = True
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+                if results.multi_hand_landmarks:
+                    for hand_landmarks in results.multi_hand_landmarks:
+                        mp_drawings.draw_landmarks(
+                            img,
+                            hand_landmarks,
+                            mp_hands.HAND_CONNECTIONS,
+                            mp_drawings.DrawingSpec(color=(48, 137, 97), thickness=2, circle_radius=4),
+                            mp_drawings.DrawingSpec(color=(255, 255, 255), thickness=2, circle_radius=2),
+                        )
 
-                    # Draw the hand annotations on the image.
-                    frame.flags.writeable = True
-                    frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                    if results.multi_hand_landmarks:
-                        for hand_landmarks in results.multi_hand_landmarks:
-                            mp_drawings.draw_landmarks(
-                                frame,
-                                hand_landmarks,
-                                mp_hands.HAND_CONNECTIONS,
-                                mp_drawings.DrawingSpec(color=(48, 137, 97), thickness=2, circle_radius=4),
-                                mp_drawings.DrawingSpec(color=(255, 255, 255), thickness=2, circle_radius=2),
-                            )
+                        # Convert the landmarks to a list wrt the image
+                        landmarks = landmarks_to_list(img, results.multi_hand_landmarks)
 
-                            # Convert the landmarks to a list wrt the image
-                            landmarks = landmarks_to_list(frame, results.multi_hand_landmarks)
+                        # Normalize the landmarks
+                        landmarks = normalize_landmarks(landmarks).reshape(1, -1)
+                        Y_pred = model(landmarks)
+                        pred_class = torch.argmax(Y_pred, axis=1).item()
 
-                            # Normalize the landmarks
-                            landmarks = normalize_landmarks(landmarks).reshape(1, -1)
-                            Y_pred = model(landmarks)
-                            pred_class = torch.argmax(Y_pred, axis=1).item()
-
-                    FRAME_WINDOW.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-                    placeholder.text(f"Predicted class: {classes[pred_class]}")
-
-            cap.release()
+                FRAME_WINDOW.image(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+                placeholder.text(f"Predicted class: {classes[pred_class]}")
 
     # code block
     st.title('Notebook')

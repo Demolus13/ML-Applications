@@ -89,53 +89,64 @@ if selected == 'Hand Gesture Recognition':
         class_col[i].markdown(f"<div style='text-align: center; margin-bottom: 20px;'>{value}</div>", unsafe_allow_html=True)
         class_col[i].image(image_path, use_column_width=True)
 
-    uploaded_file = st.file_uploader("Upload file", type=['png', 'jpg', 'jpeg'], label_visibility='collapsed')
+    if 'run' not in st.session_state:
+        st.session_state.run = False
 
-    if st.button('Process the image'):
-        if uploaded_file is not None:
-            tfile = tempfile.NamedTemporaryFile(delete=False) 
-            tfile.write(uploaded_file.read())
-            FRAME_WINDOW = st.image([])
+    if st.session_state.run:
+        st.session_state.run = not st.button('Stop')
+    else:
+        st.session_state.run = st.button('Run')
 
-            # Load the image using OpenCV
-            img = cv2.imread(tfile.name)
+    FRAME_WINDOW = st.empty()
+    cap = cv2.VideoCapture(0)
 
-            # Create a placeholder for the text
-            placeholder = st.empty()
-            pred_class = -1
+    # Create a placeholder for the text
+    placeholder = st.empty()
+    pred_class = -1
 
-            with HandLandmarker as landmarker:
+    if st.session_state.run:
+        with HandLandmarker as landmarker:
+            while st.session_state.run:
+                success, frame = cap.read()
+                if not success:
+                    continue
+
                 # Convert the BGR image to RGB.
-                img = cv2.flip(img, 1)
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                frame = cv2.flip(frame, 1)
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
                 # Detect the hand landmarks
-                img.flags.writeable = False
-                results = landmarker.process(img)
+                frame.flags.writeable = False
+                results = landmarker.process(frame)
 
                 # Draw the hand annotations on the image.
-                img.flags.writeable = True
-                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+                frame.flags.writeable = True
+                frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                 if results.multi_hand_landmarks:
                     for hand_landmarks in results.multi_hand_landmarks:
                         mp_drawings.draw_landmarks(
-                            img,
+                            frame,
                             hand_landmarks,
                             mp_hands.HAND_CONNECTIONS,
-                            mp_drawings.DrawingSpec(color=(48, 137, 97), thickness=2, circle_radius=4),
+                            mp_drawings.DrawingSpec(color=(97, 137, 48), thickness=2, circle_radius=4),
                             mp_drawings.DrawingSpec(color=(255, 255, 255), thickness=2, circle_radius=2),
                         )
 
                         # Convert the landmarks to a list wrt the image
-                        landmarks = landmarks_to_list(img, results.multi_hand_landmarks)
+                        landmarks = landmarks_to_list(frame, results.multi_hand_landmarks)
 
                         # Normalize the landmarks
                         landmarks = normalize_landmarks(landmarks).reshape(1, -1)
                         Y_pred = model(landmarks)
                         pred_class = torch.argmax(Y_pred, axis=1).item()
 
-                FRAME_WINDOW.image(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+                        # Annotate the predicted class on the screen
+                        # cv2.putText(frame, classes[pred_class], (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+
+                FRAME_WINDOW.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
                 placeholder.text(f"Predicted class: {classes[pred_class]}")
+
+        cap.release()
 
     # code block
     st.title('Notebook')
